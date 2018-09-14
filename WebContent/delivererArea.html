@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/moment.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+<title>Pregled dostava</title>
+</head>
+<script>
+var loggedIn = false;
+var delivererUsername;
+	$(document).ready(function() {
+		$.ajax({
+			url : "/web2018/app/api/sessions",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					if(result.data.type == "administrator") {
+						newTab = 
+							'<li class="nav-item"><a class="nav-link text-white" href="adminArea.html">Administracija</a></li>'
+						$("#tabovi").append(newTab);
+					} else if(result.data.type == "deliverer") {
+						delivererUsername = result.data.username;
+						newTab = '<li class="nav-item"><a class="nav-link text-white" href="delivererArea.html">Pregled dostava</a></li>'
+						loggedIn = true;
+						$("#tabovi").append(newTab);
+					} else {
+						newTab = 
+							'<li class="nav-item"><a class="nav-link text-white" href="userArea.html">Korisnički deo</a></li>'
+						$("#tabovi").append(newTab);
+						loggedIn = true;
+					}
+				}
+			}
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/deliverer",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					$.ajax({
+						url : "/web2018/app/api/orders/devArea",
+						type: "GET",
+						success: function(result) {
+							if(result.success) {
+								for(i = 0; i < result.data.length; i++) {
+									newRow = 
+										"<tr>"
+											+ "<td>" + result.data[i].id + "</td>"
+											+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+											+ "<td>" + result.data[i].buyer.username + "</td>"
+											+ "<td> Naručeno </td>"
+											+ "<td>" + result.data[i].extraInfo + "</td>"							
+											+ "<td><button class=\"btn text-white takeDel\" style=\"background-color: #00695c\" name=\"" + result.data[i].id + "\" data-toggle=\"modal\" data-target=\"#pickVehicle\">Preuzmi</button></td>"							
+										+ "</tr>"								
+									$("#tableBody").append(newRow)
+									
+								}																
+							} else 
+								alert(result.message);
+						}
+					});
+				}
+				
+			}
+		});
+		
+		
+		
+		$.ajax({
+			url : "/web2018/app/api/orders",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					for(i = 0; i < result.data.length; i++) {
+						if(result.data[i].status == "inProgress") {
+							if(result.data[i].deliverer.username == delivererUsername) {
+								newRow = 
+									"<tr>"
+										+ "<td>" + result.data[i].id + "</td>"
+										+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+										+ "<td>" + result.data[i].buyer.username + "</td>"
+										+ "<td> Dostava u toku </td>"
+										+ "<td>" + result.data[i].extraInfo + "</td>"							
+										+ "<td><button class=\"btn text-white delivered\" style=\"background-color: #00695c\" name=\"" + result.data[i].id + "\">Isporučeno</button></td>"							
+									+ "</tr>"	
+									$("#delivererOrdersTableBody").append(newRow)
+							}
+						}
+					}
+					
+				} else {
+					alert(result.message);
+				}
+			}
+		});
+		
+		
+	});
+	
+	var orderId;
+	$(document).on("click", ".takeDel", function(e) {
+		e.preventDefault();
+		orderId = $(this).attr("name");
+		$.ajax({
+			url : "/web2018/app/api/vehicles",
+			type : "GET",
+			success: function(result) {
+				if(result.success) {
+					$("#pickVehTableBody").empty();
+					for(i = 0; i < result.data.length; i++) {
+						if(!result.data[i].inUse) {
+							var vehT;
+							if(result.data[i].vehicleType === "car") {
+								vehT = "Auto";
+							} else if(result.data[i].vehicleType === "scooter") {
+								vehT = "Skuter";
+							} else {
+								vehT = "Bicikl";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].make + "</td>"
+									+ "<td>" + result.data[i].model + "</td>"
+									+ "<td>" + vehT + "</td>"
+									+ "<td>" + result.data[i].registrationNum + "</td>"						
+									+ "<td><button class=\"btn text-white takeVeh\" style=\"background-color: #00695c\" name=\"" + result.data[i].registrationNum + "\">Uzmi</button></td>"							
+								+ "</tr>"								
+							$("#pickVehTableBody").append(newRow)
+						}
+					}
+				} else 
+					alert(result.message);
+			}
+		})
+	});
+	var regNum;
+	$(document).on("click", ".takeVeh", function(e) {
+		e.preventDefault();
+		regNum = $(this).attr("name");
+		$.ajax({
+			url : "/web2018/app/api/vehicles/"+regNum+"/inUse",
+			type: "PUT",
+			contentType: "application/json"
+			
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/"+orderId+"/inProgress",
+			type: "PUT",
+			contentType: "application/json",
+			success: function(result) {
+				if(result.success) {
+					alert("Preuzeli ste narudzbu.");
+					location.reload();
+				} else {
+					alert(result.message);
+				}
+			}
+		});
+	});
+	
+	$(document).on("click", ".delivered", function(e) {
+		e.preventDefault();
+		var orderId = $(this).attr("name");
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/"+orderId+"/delivered",
+			type: "PUT",
+			contentType: "application/json",
+			success: function(result) {
+				if(result.success) {
+					alert("Dostavljeno.");
+					location.reload();
+				} else {
+					alert(result.message);
+				}
+			}
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/users/delivererVehichle",
+			type: "GET",
+			async : false,
+			success: function(result) {
+				if(result.success) {
+					$.ajax({
+						url : "/web2018/app/api/vehicles/"+result.data.registrationNum+"/free",
+						type: "PUT",
+						async : false,
+						contentType: "application/json"
+						
+					});
+				}
+			}
+		});
+		
+		
+	});
+	
+	$(document).on("click", "#login", function(e) {
+		$.ajax({
+			url : "/web2018/app/api/sessions", 
+			type: "POST",
+			success: function(result) {
+				alert(result.message);
+				window.location.href = "http://localhost:8080/web2018/login.html";
+			}
+		});
+	});
+</script>
+<body>
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+		<ul class="nav nav-tabs mr-auto" id="tabovi">
+			<li class="nav-item"><a class="nav-link text-white"
+				href="search.html">Pretraga</a></li>
+		</ul>
+		<a class="nav-link mr-0 text-white" href="login.html" id="login">Odjava</a>
+	</div>
+	<br/>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table table-striped" id="orderTable">
+				<caption>Aktivne porudzbine</caption>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Datum</th>
+						<th>Kupac</th>
+						<th>Status</th>
+						<th>Napomena</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table table-striped" id="delivererOrdersTable">
+				<caption>Preuzete porudzbine</caption>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Datum</th>
+						<th>Kupac</th>
+						<th>Status</th>
+						<th>Napomena</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody id="delivererOrdersTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	
+	<div class="modal fade" id="pickVehicle" tabindex="-1" role="dialog">
+		  <div class="modal-dialog modal-lg" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="pickVehicleLabel">Izaberi vozilo</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+				<form class="text-center" id="pickVehForm">
+					<div class="row">
+						<div class="col"></div>
+						<div class="col-10">
+							<table class="table table-striped" id="pickVehTable">
+								<thead>
+									<tr>
+										<th>Marka</th>
+										<th>Model</th>
+										<th>Tip</th>
+										<th>Reg. Oznaka</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody id="pickVehTableBody">
+								</tbody>
+							</table>
+						</div>
+						<div class="col"></div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary"
+							data-dismiss="modal">Odustani</button>
+					</div>
+				</form>
+			</div>
+		  </div>
+	</div>
+</body>
+</html>

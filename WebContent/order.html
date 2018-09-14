@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Naruči</title>
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+</head>
+<script>
+	var restaurant;
+	$(document).ready(function() {
+		var data = localStorage.getItem("restaurantName");
+		restaurant = $.parseJSON(data);
+		$.ajax({
+			url : "/web2018/app/api/sessions",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {					
+						newTab = 
+							'<li class="nav-item"><a class="nav-link text-white" href="userArea.html">Korisnički deo</a></li>'
+						$("#tabovi").append(newTab);
+						loggedIn = true;
+					
+				}
+			}
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/articles/"+restaurant,
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					for(i = 0; i < result.data.length; i++) {
+						if(!result.data[i].deleted) {
+							var articleType;
+							if(result.data[i].type === "drink") {
+								articleType = "Piće";
+							} else {
+								articleType = "Hrana";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].name + "</td>"
+									+ "<td>" + articleType + "</td>"
+									+ "<td>" + result.data[i].pricePerUnit + "</td>"
+									+ "<td>" + result.data[i].description + "</td>"
+									+ "<td><input class=\"checkBox\" type=\"checkbox\" id=\""+ result.data[i].name + "\"></td>"																											
+								+ "</tr>"								
+							$("#tableBody").append(newRow)
+						}
+					}	
+				} else {
+					alert(result.message);
+				}
+				
+			}
+		});
+		
+	});
+	
+	var articleNames = [];
+	$(document).on("click", ".checkBox", function(e) {
+		if($(this).is(':checked')) {
+			var name = $(this).attr("id");
+			articleNames.push(name);
+		}				
+	});
+	
+	$(document).on("click", "#orderBtn", function(e) {
+		e.preventDefault();
+		
+		formData = JSON.stringify({
+			articles:articleNames,
+			restaurant:restaurant,
+			notes:$("#notes").val()
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/",
+			type: "POST",
+			data: formData,
+			contentType: "application/json",
+			success: function(result) {
+				if(result.success) {
+					alert("Naručeno!");
+					window.location.href = "http://localhost:8080/web2018/index.html";
+				} else 
+					alert(result.message);
+				
+			}
+		})
+	});
+	
+	
+	
+</script>
+<body>
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+		<ul class="nav nav-tabs mr-auto" id="tabovi">
+			<li class="nav-item"><a class="nav-link text-white"
+				href="index.html">Restorani</a></li>
+			<li class="nav-item"><a class="nav-link text-white"
+				href="search.html">Pretraga</a></li>
+		</ul>
+	</div>
+	<br/>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-8">
+				<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>Artikal</th>
+						<th>Tip</th>
+						<th>Jedinična Cena</th>
+						<th>Opis</th>
+						<th>Izaberi</th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+				</tbody>
+				</table>
+				<input type="text" id="notes" placeholder="Napomena"/>
+				<button type="button" class="btn text-white" style="background-color: #00695c" id="orderBtn">Naruči</button>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>	
+</body>
+</html>

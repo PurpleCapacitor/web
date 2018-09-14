@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+
+<title>Administratorski deo</title>
+</head>
+<script>
+	var restaurant;
+	$(document).ready(function() {
+		var data = localStorage.getItem("resName");
+		name = $.parseJSON(data);
+		
+		$.ajax({
+			url : "http://localhost:8080/web2018/app/api/restaurants/"+name,
+			async: false,
+			type: "GET",
+			success: function(result) {
+				restaurant = result.data;
+			}
+		});
+		
+		document.getElementById("naslov").innerHTML = restaurant.name;
+		
+		$.ajax({
+			url : "/web2018/app/api/articles/"+name,
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					for(i = 0; i < result.data.length; i++) {
+						if(!result.data[i].deleted) {
+							var articleType;
+							if(result.data[i].type === "drink") {
+								articleType = "Piće";
+							} else {
+								articleType = "Hrana";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].name + "</td>"
+									+ "<td>" + articleType + "</td>"
+									+ "<td>" + result.data[i].pricePerUnit + "</td>"
+									+ "<td>" + result.data[i].description + "</td>"
+									+ "<td><button class=\"btn text-white edit\" style=\"background-color: #00695c\" name=\"" + result.data[i].name + "\" data-toggle=\"modal\" data-target=\"#editArticleModal\">Izmeni</button></td>"
+									+ "<td><button class=\"btn btn-danger delete\" name=\"" + result.data[i].name + "\" >Obriši</button></td>"
+									+ "<td><input class=\"checkBox\" type=\"checkbox\" id=\""+ result.data[i].name + "\"></td>"
+									
+								+ "</tr>"								
+							$("#tableBody").append(newRow)
+						}
+					}	
+				} else {
+					alert(result.message);
+				}
+				
+			}
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/users",
+			type: "GET",
+			success: function(result) {
+				for(i = 0; i < result.data.length; i++) {
+					if(result.data[i].type != "deliverer") {
+						var option = new Option(result.data[i].username, result.data[i].username); 
+						$('#buyer').append($(option));
+					}
+				}
+				
+			}
+		});
+		
+		
+		
+	});	
+	
+	$(document).on("click", ".changeOrder", function(e) {
+		e.preventDefault();
+		var orderId = $(this).attr("name");
+		var resName = restaurant.name;
+		localStorage.setItem("editOrderResName", JSON.stringify(resName));
+		localStorage.setItem("editOrderId", JSON.stringify(orderId));
+		window.location.href = "http://localhost:8080/web2018/editOrder.html";
+	});
+	
+	$(document).on("click", ".delete", function(e) {
+		e.preventDefault();
+		var confirmed = confirm("Da li ste sigurni da želite da obrišete ovaj artikal?");
+		if(confirmed){
+			var name = $(this).attr("name");
+			tr_parent = $(this).closest("tr");
+			$.ajax({
+	        	url: "/web2018/app/api/articles/"+restaurant.name+"/"+name,
+	        	type: "DELETE",
+	        	success: function(){
+					tr_parent.remove();
+		        }
+			});
+		}
+	});
+	
+	$(document).on("submit", "#articleForm", function(e) {
+		e.preventDefault();
+		if($("#arName").val()=="" || $("#pricePerUnit").val()=="" || $("#description").val()==""){
+			alert("Niste popunili sva polja.");
+			return;
+		}
+		
+		formData = JSON.stringify({
+			name:$("#arName").val(),
+			pricePerUnit:$("#pricePerUnit").val(),
+			description:$("#description").val(),
+			type:$("#type option:selected").attr("name")
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/articles/"+restaurant.name,
+			type: "POST",
+			data: formData,
+			contentType: "application/json",
+			success: function(result) {
+				if(result.success) {
+					var articleType;
+					$("#arName").val("");
+					$("#pricePerUnit").val("");
+					$("#description").val("");
+					$("#type").prop('selectedIndex',0);
+					if(result.data.type === "drink") {
+						articleType = "Piće";
+					} else {
+						articleType = "Hrana";
+					}
+					newRow = 
+						"<tr>"
+							+ "<td>" + result.data.name + "</td>"
+							+ "<td>" + articleType + "</td>"
+							+ "<td>" + result.data.pricePerUnit + "</td>"
+							+ "<td>" + result.data.description + "</td>"
+							+ "<td><button class=\"btn text-white edit\" style=\"background-color: #00695c\" name=\"" + result.data.name + "\" data-toggle=\"modal\" data-target=\"#editArticleModal\">Izmeni</button></td>"
+							+ "<td><button class=\"btn btn-danger delete\" name=\"" + result.data.name + "\" >Obriši</button></td>"
+							+ "<td><input class=\"checkBox\" type=\"checkbox\" id=\""+ result.data.name + "\"></td>"
+						+ "</tr>"								
+					$("#tableBody").append(newRow)
+					$('#addArticleModal').modal('toggle');
+				} else {
+					$('#addArticleModal').modal('toggle');
+					alert(result.message);
+				}
+					
+					
+			}
+		})
+	});
+	
+	var oldArticleName;
+	$(document).on("click", ".edit", function(event) {
+		event.preventDefault();
+		var name = $(this).attr("name");
+		oldArticleName = name;
+		$.ajax({
+			url: "/web2018/app/api/articles/"+restaurant.name+"/"+name,
+			type: "GET",
+			success: function(result) {
+				$("#editArName").val(result.data.name);
+				$("#editPricePerUnit").val(result.data.pricePerUnit);
+				$("#editDescription").val(result.data.description);
+				$('#editType option[name="'+ result.data.type +'"]').attr("selected", true);
+				
+				
+			}
+		});
+	});
+	
+	$(document).on("submit", "#editArticleForm", function(e) {
+		e.preventDefault();
+		if($("#editArName").val()=="" || $("#editPricePerUnit").val()=="" || $("#editDescription").val()==""){
+			alert("Niste popunili sva polja.");
+			return;
+		}
+		
+		formData = JSON.stringify({
+			name:$("#editArName").val(),
+			pricePerUnit:$("#editPricePerUnit").val(),
+			description:$("#editDescription").val(),
+			type:$("#editType option:selected").attr("name")
+		});
+		
+		$.ajax({
+			url:  "/web2018/app/api/articles/"+restaurant.name+"/"+oldArticleName,
+			type: "PUT",
+			data: formData,
+			contentType: "application/json",
+			success: function(result) {
+				$("#editArName").val("");
+				$("#editPricePerUnit").val("");
+				$("#editDescription").val("");
+				$("#editType").prop('selectedIndex',0);
+				if(result.success) {
+					$('#editArticleModal').modal('toggle');
+					window.location.reload();
+				} else {
+					$('#editArticleModal').modal('toggle');
+					alert(result.message);
+				}
+				
+			}
+			
+		});
+	});
+	
+	var articleNames = [];
+	$(document).on("click", ".checkBox", function(e) {
+		if($(this).is(':checked')) {
+			var name = $(this).attr("id");
+			articleNames.push(name);
+		}				
+	});
+	
+	$(document).on("click", "#orderBtn", function(e) {
+		e.preventDefault();
+		var buyer = $("#buyer").val();
+		orderData = JSON.stringify({
+			articles:articleNames,
+			restaurant:restaurant.name,
+			notes:$("#notes").val()
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/"+buyer,
+			type: "POST",
+			data: orderData,
+			contentType: "application/json",
+			success: function(result) {
+				if(result.success) {
+					alert("Naručeno!");
+					location.reload();
+				} else 
+					alert(result.message);
+				
+			}
+		})
+	});
+	
+	$(document).on("click", "#login", function(e) {
+		$.ajax({
+			url : "/web2018/app/api/sessions", 
+			type: "POST",
+			success: function(result) {
+				alert(result.message);
+				window.location.href = "http://localhost:8080/web2018/login.html";
+			}
+		});
+	});
+</script>
+
+
+<body>
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+			<ul class="nav nav-tabs mr-auto">	
+				<li class="nav-item">
+					<a class="nav-link text-white" href="search.html">Pretraga</a>
+				</li>		
+				<li class="nav-item">
+					<a class="nav-link text-white" href="adminArea.html">Administracija</a>
+				</li>			
+			</ul>
+			<a class="nav-link mr-0 text-white" href="login.html" id="login">Odjava</a>
+		</div>
+	<br/>
+	<h1 id="naslov" style="text-align:center"></h1>
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-8">
+				<table class="table table-striped">
+				<thead class="thead-dark">
+					<tr>
+						<th>Artikal</th>
+						<th>Tip</th>
+						<th>Jedinična Cena</th>
+						<th>Opis</th>
+						<th colspan="3">Akcije</th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+				</tbody>
+				</table>
+				<button type="button" class="btn text-white" style="background-color: #00695c" data-toggle="modal" data-target="#addArticleModal">Dodaj artikal</button>
+				<br/>
+				<br/>
+				<label for="buyer">Kupac</label> <select id="buyer"></select>
+				<br/>
+				<input type="text" id="notes" placeholder="Napomena"/>
+				<br/>
+				<br/>
+				<button type="button" class="btn text-white" style="background-color: #00695c" id="orderBtn">Naruči</button>
+				
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>	
+	<br/>
+	<br/>
+	
+	
+	<div class="modal fade" id="addArticleModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="addArticleModalLabel">Novi Artikal</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <form class="text-center" id="articleForm">
+			      <div class="modal-body form-group text-center">				
+						<p>
+							<label for="arName">Naziv</label> <input class="form-control text-center" type="text"
+								id="arName" required/>
+						</p>	
+						<p>
+							<label for="pricePerUnit">Jedinična cena</label> <input class="form-control text-center" type="number"
+								id="pricePerUnit" />
+						</p>	
+						<p>
+							<label for="description">Opis</label> <input class="form-control text-center" type="text"
+								id="description" />
+						</p>
+						<p>
+							<label for="type">Tip</label> <select class="form-control text-center" id="type">
+								<option name="food">Hrana</option>
+								<option name="drink">Piće</option>
+							</select>
+						</p>
+			      </div>
+			      <div class="modal-footer">
+			      	<input type="submit" class="btn text-white" style="background-color: #00695c" value="Dodaj"/>
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+			      </div>
+		      </form>
+		    </div>
+		  </div>
+		</div>	
+		
+	<div class="modal fade" id="editArticleModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="editArticleModalLabel">Izmeni restoran</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <form class="text-center" id="editArticleForm">
+			      <div class="modal-body form-group text-center">				
+						<p>
+							<label for="editArName">Naziv</label> <input class="form-control text-center" type="text"
+								id="editArName" required/>
+						</p>	
+						<p>
+							<label for="editPricePerUnit">Jedinična cena</label> <input class="form-control text-center" type="number"
+								id="editPricePerUnit" />
+						</p>	
+						<p>
+							<label for="editDescription">Opis</label> <input class="form-control text-center" type="text"
+								id="editDescription" />
+						</p>
+						<p>
+							<label for="editType">Tip</label> <select class="form-control text-center" id="editType">
+								<option name="food">Hrana</option>
+								<option name="drink">Piće</option>
+							</select>
+						</p>
+			      </div>
+			      <div class="modal-footer">
+			      	<input type="submit" class="btn text-white" style="background-color: #00695c" value="Izmeni"/>
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+			      </div>
+		      </form>
+		    </div>
+		  </div>
+	</div>	
+</body>
+
+
+
+</html>

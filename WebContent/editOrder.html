@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+<title>Izmena narudzbe</title>
+</head>
+<script>
+var data = localStorage.getItem("editOrderResName");
+var restaurantName = $.parseJSON(data);
+var data1 = localStorage.getItem("editOrderId");
+var orderId = $.parseJSON(data1);
+var order;
+	$(document).ready(function() {
+		$.ajax({
+			url : "/web2018/app/api/orders/"+orderId,
+			type : "GET",
+			async: false,
+			success: function(result) {
+				if(result.success) {
+					for(i = 0; i < result.data.items.length; i++) {
+						var articleType;
+						if(result.data.items[i].type === "drink") {
+							articleType = "Piće";
+						} else {
+							articleType = "Hrana";
+						}
+						newRow = 
+							"<tr>"
+								+ "<td>" + result.data.items[i].name + "</td>"
+								+ "<td>" + articleType + "</td>"
+								+ "<td>" + result.data.items[i].pricePerUnit + "</td>"
+								+ "<td>" + result.data.items[i].description + "</td>"
+								+ "<td>da</td>"
+								+ "<td><input class=\"checkBox\" type=\"checkbox\" id=\""+ result.data.items[i].name + "\"></td>"
+								//treba da je cekirano sad
+								
+							+ "</tr>"								
+						$("#tableBody").append(newRow)
+					}
+				}
+				
+			}
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/articles/"+restaurantName,
+			type: "GET",
+			async: false,
+			success: function(result) {
+				if(result.success) {
+					for(i = 0; i < result.data.length; i++) {
+						if(!result.data[i].deleted) {							
+							/* var articleType;
+							if(result.data[i].type === "drink") {
+								articleType = "Piće";
+							} else {
+								articleType = "Hrana";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].name + "</td>"
+									+ "<td>" + articleType + "</td>"
+									+ "<td>" + result.data[i].pricePerUnit + "</td>"
+									+ "<td>" + result.data[i].description + "</td>"
+									+ "<td><input class=\"checkBox\" type=\"checkbox\" id=\""+ result.data[i].name + "\"></td>"
+									
+								+ "</tr>"								
+							$("#tableBody").append(newRow) */
+							
+						}
+					}	
+				} else {
+					alert(result.message);
+				}
+				
+			}
+		});
+		
+		
+	});
+
+
+
+	$(document).on("click", "#login", function(e) {
+		$.ajax({
+			url : "/web2018/app/api/sessions", 
+			type: "POST",
+			success: function(result) {
+				alert(result.message);
+				window.location.href = "http://localhost:8080/web2018/login.html";
+			}
+		});
+	});
+</script>
+<body>
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+			<ul class="nav nav-tabs mr-auto">	
+				<li class="nav-item">
+					<a class="nav-link text-white" href="search.html">Pretraga</a>
+				</li>			
+				<li class="nav-item">
+					<a class="nav-link text-white" href="adminArea.html">Administracija</a>
+				</li>	
+			</ul>
+			<a class="nav-link mr-0 text-white" href="login.html" id="login">Odjava</a>
+		</div>
+	<br/>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-8">
+				<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>Artikal</th>
+						<th>Tip</th>
+						<th>Jedinična Cena</th>
+						<th>Opis</th>
+						<th>Izaberi</th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+				</tbody>
+				</table>
+				
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>	
+	<br/>
+	<br/>
+	
+		<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-8">
+				<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>Artikal</th>
+						<th>Tip</th>
+						<th>Jedinična Cena</th>
+						<th>Opis</th>
+						<th>Izaberi</th>
+					</tr>
+				</thead>
+				<tbody id="resTableBody">
+				</tbody>
+				</table>
+				<label for="buyer">Kupac</label> <select id="buyer"></select>
+				<br/>
+				<input type="text" id="notes" placeholder="Napomena"/>
+				<br/>
+				<br/>
+				<button type="button" class="btn text-white" style="background-color: #00695c" id="orderBtn">Naruči</button>
+				
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>	
+	<br/>
+	<br/>
+</body>
+</html>

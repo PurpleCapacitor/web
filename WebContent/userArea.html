@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+
+<title>Korisnički deo</title>
+</head>
+
+<script>
+var username;
+	$(document).ready(function() {
+		$.ajax({
+			url : "/web2018/app/api/sessions",
+			type: "GET",
+			async: false,
+			success: function(result) {
+				if(result.success) {
+					username = result.data.username;
+						newTab = 
+							'<li class="nav-item"><a class="nav-link text-white" href="userArea.html">Korisnički deo</a></li>'
+						$("#tabovi").append(newTab);
+					
+				}
+			}
+		});
+		
+		$.ajax({
+			url : "/web2018/app/api/users/restaurants/",
+			type: "GET",
+			success: function(restaurants) {
+				for(i = 0; i < restaurants.data.length; i++) {
+					if(restaurants.success) {
+						newRow = 
+							"<tr>"
+								+ "<td>" + restaurants.data[i].name + "</td>"
+							+ "</tr>"								
+						$("#restaurantsTableBody").append(newRow)
+					} else {
+						newRow = 
+							"<tr>"
+								+ "<td>Nema restorana</td>"
+							+ "</tr>"								
+						$("#restaurantsTableBody").append(newRow)
+					}
+					
+				}
+			}
+		});
+		
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/users/"+username,
+			type: "GET",
+			async: false,
+			success: function(result) {
+				if(result.success) {
+					var status;
+					
+					for(i = 0; i < result.data.length; i++) {
+						if(result.data[i].status == "ordered") {
+							status = "Poručeno";
+						} else if(result.data[i].status == "inProgress") {
+							status = "Dostava u toku";
+						}
+						else if(result.data[i].status == "canceled") {
+							status = "Otkazano";
+						} else 
+							status = "Dostavljeno";
+						var tableItems = [];
+						for(j = 0; j < result.data[i].items.length; j++) {
+							tableItems += (result.data[i].items[j].name);
+							tableItems += " ";
+						}
+						newRow = 
+							"<tr>"
+								+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+								+ "<td>" + status + "</td>"
+								+ "<td>" + tableItems.toString() + "</td>"
+							+ "</tr>"								
+						$("#ordersTableBody").append(newRow)
+					}
+					
+				}
+			}
+		});
+	});
+	
+	
+		
+	$(document).on("click", "#login", function(e) {
+		$.ajax({
+			url : "/web2018/app/api/sessions",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					$.ajax({
+						url : "/web2018/app/api/sessions", 
+						type: "POST",
+						success: function(result) {
+							alert(result.message);
+							window.location.href = "http://localhost:8080/web2018/login.html";
+						}
+					});
+				}
+			}
+		});
+		
+	});
+		
+
+	
+
+	
+</script>
+
+<body>
+	
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+			<ul class="nav nav-tabs mr-auto" id="tabovi">	
+				<li class="nav-item">
+					<a class="nav-link text-white" href="index.html">Restorani</a>
+				</li>	
+				<li class="nav-item">
+					<a class="nav-link text-white" href="search.html">Pretraga</a>
+				</li>				
+			</ul>
+			<a class="nav-link mr-0 text-white" href="login.html" id="login">Odjava</a>
+		</div>
+
+<div style="margin-top: 1%">
+</div>
+
+<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table table-striped" id="restaurantsTable">
+				<caption>Omiljeni restorani</caption>
+				<thead>
+					<tr>
+						<th>Ime restorana</th>
+					</tr>
+				</thead>
+				<tbody id="restaurantsTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+
+<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table table-striped" id="ordersTable">
+				<caption>Spisak porudzbina</caption>
+				<thead>
+					<tr>
+						<th>Datum</th>
+						<th>Status</th>
+						<th>Artikli</th>
+					</tr>
+				</thead>
+				<tbody id="ordersTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+
+	
+</body>
+
+
+
+</html>

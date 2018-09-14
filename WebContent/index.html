@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Index</title>
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+</head>
+
+<script>
+var loggedIn = false;
+	$(document).ready(function() {
+		$("#categoryModal").modal("show");
+		$.ajax({
+			url : "/web2018/app/api/sessions",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {
+					$("#categoryModal").modal("show");
+					$("#login").text("Odjava");
+						newTab = 
+							'<li class="nav-item"><a class="nav-link text-white" href="userArea.html">Korisnički deo</a></li>'
+						$("#tabovi").append(newTab);
+						loggedIn = true;
+					
+				} else {
+					window.location.href = "http://localhost:8080/web2018/login.html";
+				}
+			}
+		});
+		indexx = 1;
+		$.ajax({
+			url : "/web2018/app/api/favArticles",
+			type: "GET",
+			success: function(result) {
+				for(i = 0;i < result.data.length; i++) {
+					if(result.data[i].type == "food") {
+						index = i + 1;
+						var newRow='<tr>'
+							+'<td>'+ index +'</td>'
+							+'<td>'+result.data[i].name+'</td>'
+							+'<td>'+result.data[i].restaurant+'</td>'
+							+'</tr>';
+						$("#foodTableBody").append(newRow);
+					
+					} else if(result.data[i].type == "drink") {							
+							var newRow='<tr>'
+								+'<td>'+ indexx +'</td>'
+								+'<td>'+result.data[i].name+'</td>'
+								+'<td>'+result.data[i].restaurant+'</td>'
+								+'</tr>';							
+							$("#drinkTableBody").append(newRow);
+							indexx++;
+							
+					}
+					
+				}
+
+			}
+		});
+		
+		
+		
+	});
+	
+	$(document).on("submit", "#categoryForm", function(e) {
+		e.preventDefault();
+		var type = $("#type option:selected").attr("name");
+		$.ajax({
+			url : "/web2018/app/api/restaurants/cat/"+type,
+			type : "GET",
+			async: false,
+			success: function(result) {
+				if(result.success) {
+					for(i = 0; i < result.data.length; i++) {
+						newRow = 
+							"<tr>"
+								+ "<td>" + result.data[i].name + "</td>"
+								+ "<td>" + result.data[i].address + "</td>"
+								+ "<td><button class=\"btn text-white menu\" style=\"background-color: #00695c\" name=\"" + result.data[i].name + "\">Ponuda</button></td>"
+							+ "</tr>"								
+						$("#tableBody").append(newRow)
+						$('#categoryModal').modal('toggle');						
+					}
+					
+				} else {
+					alert(result.message);
+				}
+			}
+		});
+		
+	});
+	
+	$.ajax({
+		url : "/web2018/app/api/users/restaurants/",
+		type: "GET",
+		async: false,
+		success: function(restaurants) {
+			if(restaurants.success) {
+				for(j = 0; j < restaurants.data.length; j++) {
+					if(result.data[i].name == restaurants.data[j].name) {
+						
+					} 
+				}
+			} else {
+				newRow = 
+					"<tr>"
+						+ "<td>" + result.data[i].name + "</td>"
+						+ "<td>" + result.data[i].address + "</td>"
+						+ "<td><button class=\"btn text-white menu\" style=\"background-color: #00695c\" name=\"" + result.data[i].name + "\">Ponuda</button></td>"
+
+						+ "<td><button class=\"btn text-white fav\" style=\"background-color: #00695c\" name=\"" + result.data[i].name + "\">Fav</button></td>"
+					+ "</tr>"								
+				$("#tableBody").append(newRow)
+				$('#categoryModal').modal('toggle');
+			}
+			
+		}
+	});
+	
+	var menuName;
+	$(document).on("click", ".menu", function(e){
+		e.preventDefault();
+		menuName = $(this).attr("name");
+		
+		$.ajax({
+			url : "/web2018/app/api/articles/"+menuName,
+			type : "GET",
+			success: function(result) {
+				if(result.success) {
+					$.ajax({
+						url : "/web2018/app/api/users/restaurants/"+menuName,
+						type: "GET",
+						async: false,
+						success: function(result) {
+							$("#favoriteButton").remove();
+							if(result.success) {
+								button = '<button type="button" class="btn btn-warning" disabled id="favoriteButton" name="'+ menuName +'">Omiljeni</button>';
+								$("#resFooter").append(button);
+							} else {
+								button = '<button type="button" class="btn btn-warning" id="favoriteButton" name="'+ menuName +'">Omiljeni</button>';
+								$("#resFooter").append(button);
+							}
+						}
+					});
+					$("#restaurantMenuModal").modal("show");
+					$("#menuTableBody").empty();
+					for(i = 0; i < result.data.length; i++) {
+						if(!result.data[i].deleted) {
+							var articleType;
+							if(result.data[i].type === "drink") {
+								articleType = "Piće";
+							} else {
+								articleType = "Hrana";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].name + "</td>"
+									+ "<td>" + articleType + "</td>"
+									+ "<td>" + result.data[i].pricePerUnit + "</td>"									
+								+ "</tr>"								
+							$("#menuTableBody").append(newRow)
+						}
+					}
+				} else 
+					alert(result.message);
+			}
+		})
+		
+		
+	});
+	
+	$(document).on("click", "#favoriteButton", function(e) {
+		e.preventDefault();
+		var resName = $(this).attr("name");
+		$.ajax({
+			url : "/web2018/app/api/users/restaurants/"+resName,
+			type: "POST",
+			contentType: "application/json",
+			success: function(result) {
+				if(result.success) {
+					alert("Restoran dodat.");
+					$("#favoriteButton").remove();
+					button = '<button type="button" class="btn btn-warning" disabled id="favoriteButton" name="'+ menuName +'">Omiljeni</button>';
+					$("#resFooter").append(button);
+					//location.reload();
+				}
+			}
+		});
+	});
+	
+	$(document).on("click", "#order", function(e){
+		e.preventDefault();
+		if(loggedIn) {
+			localStorage.setItem("restaurantName", JSON.stringify(menuName));
+			window.location.href = "http://localhost:8080/web2018/order.html";
+		} else {
+			alert("Morate biti ulogovani da biste poručili");
+		}
+	});
+	
+	$(document).on("click", "#login", function(e) {
+		$.ajax({
+			url : "/web2018/app/api/sessions",
+			type: "GET",
+			async : false,
+			success: function(result) {
+				if(result.success) {
+					$.ajax({
+						url : "/web2018/app/api/sessions", 
+						type: "POST",
+						async: false,
+						success: function(result) {
+							alert(result.message);
+							window.location.href = "http://localhost:8080/web2018/login.html";
+						}
+					});
+				}
+			}
+		});
+		
+	});
+</script>
+<body>
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+		<ul class="nav nav-tabs mr-auto" id="tabovi">
+			<li class="nav-item"><a class="nav-link text-white"
+				href="index.html">Restorani</a></li>
+			<li class="nav-item"><a class="nav-link text-white"
+				href="search.html">Pretraga</a></li>
+		</ul>
+		<a class="nav-link mr-0 text-white" href="login.html" id="login">Prijava</a>
+	</div>
+	<br/>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table" id="restaurantTable">
+				<thead class="thead-dark">
+					<tr>
+						<th>Ime Restorana</th>
+						<th>Adresa</th>
+						<th>Meni</th>
+						<th></th>						
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	
+	<div class="modal fade" id="restaurantMenuModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog modal-lg" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="restaurantMenuModalLabel">Pregled menija</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+				<form class="text-center" id="menuForm">
+					<div class="row">
+						<div class="col"></div>
+						<div class="col-10">
+							<table class="table table-striped" id="menuTable">
+								<thead>
+									<tr>
+										<th>Artikal</th>
+										<th>Tip</th>
+										<th>Cena</th>
+									</tr>
+								</thead>
+								<tbody id="menuTableBody">
+								</tbody>
+							</table>
+						</div>
+						<div class="col"></div>
+					</div>
+					<div class="modal-footer" id="resFooter">
+						<input type="submit" class="btn text-white" id="order"
+							style="background-color: #00695c" value="Poruči" />
+						<button type="button" class="btn btn-secondary"
+							data-dismiss="modal">Odustani</button>
+					</div>
+				</form>
+			</div>
+		  </div>
+	</div>
+	
+	<div class="modal fade" id="categoryModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="categoryModalLabel">Izaberite kategoriju restorana</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+				<form class="text-center" id="categoryForm">
+					<div class="modal-body form-group text-center">
+						<p>
+							 <select class="form-control text-center" id="type">
+								<option name="domestic">Domaca kuhinja</option>
+								<option name="barbecue">Rostilj</option>
+								<option name="chinese">Kineska kuhinja</option>
+								<option name="indian">Indijska kuhinja</option>
+								<option name="pastryShop">Poslasticarnica</option>
+								<option name="pizzeria">Picerija</option>
+							</select>
+						</p>
+					</div>
+					<div class="modal-footer">
+						<input type="submit" class="btn text-white"
+							style="background-color: #00695c" value="Izaberi" />
+					</div>
+				</form>
+			</div>
+		  </div>
+	</div>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table" id="foodTable">
+				<caption>Top 10 Jela</caption>
+				<thead class="thead-dark">
+					<tr>
+						<th>#</th>
+						<th>Naziv</th>
+						<th>Restoran</th>
+					</tr>
+				</thead>
+				<tbody id="foodTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	
+		<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table" id="drinkTable">
+				<caption>Top 10 Pića</caption>
+				<thead class="thead-dark">
+					<tr>
+						<th>#</th>
+						<th>Naziv</th>
+						<th>Restoran</th>
+					</tr>
+				</thead>
+				<tbody id="drinkTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	
+</body>
+</html>

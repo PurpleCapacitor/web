@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta http-equiv="Cоntent-Type" content="text/html" charset="utf-8">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<link rel="stylesheet" href="stylesheets/bootstrap.css">
+
+<title>Administratorski deo</title>
+</head>
+
+<script>
+	$(document).ready(function() {
+		$.ajax({
+			url : "http://localhost:8080/web2018/app/api/restaurants"
+		}).then(
+				function(result) {
+					for (i = 0; i < result.data.length; i++) {
+						if(!result.data[i].deleted) {
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].name + "</td>"
+									+ "<td><button class=\"btn text-white details\" style=\"background-color: #00695c\" name=\"" + result.data[i].name + "\" >Detaljnije</button></td>"
+									+ "<td><button class=\"btn text-white edit\" style=\"background-color: #00695c\" name=\"" + result.data[i].name + "\" data-toggle=\"modal\" data-target=\"#editRestaurantModal\">Izmeni</button></td>"
+									+ "<td><button class=\"btn btn-danger delete\" name=\"" + result.data[i].name + "\" >Obriši</button></td>"
+									
+								+ "</tr>"								
+							$("#tableBody").append(newRow)
+						}
+						
+						
+					}
+			});
+		
+		$.ajax({
+			url : "/web2018/app/api/orders/",
+			type: "GET",
+			success: function(result) {
+				if(result.success) {					
+					for(i = 0; i < result.data.length; i++) {
+						if(result.data[i].deliverer != null) {
+							var status;
+							if(result.data[i].status == "ordered") {
+								status = "Poručeno";
+							} else if(result.data[i].status == "inProgress") {
+								status = "Dostava u toku";
+							}
+							else if(result.data[i].status == "canceled") {
+								status = "Otkazano";
+							} else 
+								status = "Dostavljeno";
+							if(result.data[i].status == "canceled") {
+								newRow = 
+									"<tr>"
+										+ "<td>" + result.data[i].id + "</td>"
+										+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+										+ "<td>" + result.data[i].buyer.username + "</td>"
+										+ "<td>" + status + "</td>"
+										+ "<td>"+ result.data[i].deliverer.username +"</td>"											
+										+ "<td><button class=\"btn btn-danger delOrder\" name=\"" + result.data[i].id + "\">Obriši</button></td>"							
+									+ "</tr>"								
+								$("#orderTableBody").append(newRow)
+							} else {
+								newRow = 
+									"<tr>"
+										+ "<td>" + result.data[i].id + "</td>"
+										+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+										+ "<td>" + result.data[i].buyer.username + "</td>"
+										+ "<td>" + status + "</td>"
+										+ "<td>"+ result.data[i].deliverer.username +"</td>"
+										+ "<td><button class=\"btn btn-danger cancelOrder\" name=\"" + result.data[i].id + "\">Otkaži</button></td>"	
+										+ "<td><button class=\"btn btn-danger delOrder\" name=\"" + result.data[i].id + "\">Obriši</button></td>"							
+									+ "</tr>"								
+								$("#orderTableBody").append(newRow)
+							}
+							
+						} else {
+							var status;
+							if(result.data[i].status == "ordered") {
+								status = "Poručeno";
+							} else if(result.data[i].status == "inProgress") {
+								status = "Dostava u toku";
+							}
+							else if(result.data[i].status == "canceled") {
+								status = "Otkazano";
+							} else 
+								status = "Dostavljeno";
+							if(result.data[i].status == "canceled") {
+								newRow = 
+									"<tr>"
+										+ "<td>" + result.data[i].id + "</td>"
+										+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+										+ "<td>" + result.data[i].buyer.username + "</td>"
+										+ "<td>" + status + "</td>"
+										+ "<td>Nema dostavljača</td>"											
+										+ "<td><button class=\"btn btn-danger delOrder\" name=\"" + result.data[i].id + "\">Obriši</button></td>"							
+									+ "</tr>"								
+								$("#orderTableBody").append(newRow)
+							} else {
+								newRow = 
+									"<tr>"
+										+ "<td>" + result.data[i].id + "</td>"
+										+ "<td>" + result.data[i].date.substring(0,10) + "</td>"
+										+ "<td>" + result.data[i].buyer.username + "</td>"
+										+ "<td>" + status + "</td>"
+										+ "<td>Nema dostavljača</td>"					
+										+ "<td><button class=\"btn btn-danger cancelOrder\" name=\"" + result.data[i].id + "\">Otkaži</button></td>"	
+										+ "<td><button class=\"btn btn-danger delOrder\" name=\"" + result.data[i].id + "\">Obriši</button></td>"							
+									+ "</tr>"								
+								$("#orderTableBody").append(newRow)
+							}
+						}
+						
+						
+					}																
+				} else 
+					alert(result.message);
+			}
+		});
+		
+		$.ajax({
+			url : "http://localhost:8080/web2018/app/api/vehicles"
+		}).then(
+				function(result) {
+					for (i = 0; i < result.data.length; i++) {
+						if(!result.data[i].deleted) {
+							var vehT;
+							if(result.data[i].vehicleType === "car") {
+								vehT = "Auto";
+							} else if(result.data[i].vehicleType === "scooter") {
+								vehT = "Skuter";
+							} else {
+								vehT = "Bicikl";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].registrationNum + "</td>"
+									+ "<td>" + result.data[i].make + "</td>"
+									+ "<td>" + result.data[i].model + "</td>"
+									+ "<td>" + vehT + "</td>"
+									+ "<td>" + result.data[i].productionYear + "</td>"
+									+ "<td>" + result.data[i].extraInfo + "</td>"							
+									+ "<td><button class=\"btn text-white editVeh\" style=\"background-color: #00695c\" name=\"" + result.data[i].registrationNum + "\" data-toggle=\"modal\" data-target=\"#editVehicleModal\">Izmeni</button></td>"
+									+ "<td><button class=\"btn btn-danger deleteVeh\" name=\"" + result.data[i].registrationNum + "\">Obriši</button></td>"
+								+ "</tr>"								
+							$("#vehicleTableBody").append(newRow)
+						}
+						
+						
+					}
+			});
+		
+		$.ajax({
+			url : "http://localhost:8080/web2018/app/api/users"
+		}).then(
+				function(result) {
+					for (i = 0; i < result.data.length; i++) {
+							var type;
+							if(result.data[i].type === "buyer") {
+								type = "Kupac";
+							} else {
+								type = "Dostavljač";
+							}
+							newRow = 
+								"<tr>"
+									+ "<td>" + result.data[i].username + "</td>"
+									+ "<td>" + type + "</td>"
+									+ "<td><button class=\"btn text-white change\" style=\"background-color: #00695c\" name=\"" + result.data[i].username + "\">Promeni tip</button></td>"
+									
+								+ "</tr>"								
+							$("#userTableBody").append(newRow)						
+					}
+			});
+		
+		
+		$('#resForm').submit(function(event) {
+			event.preventDefault();
+			if($("#resName").val()=="" || $("#address").val()==""){
+				alert("Niste popunili sva polja.");
+				return;
+			}
+			
+			formData = JSON.stringify({
+				name:$("#resName").val(),
+				address:$("#address").val(),
+				restaurantType:$("#type option:selected").attr("name")
+			});
+			
+			$.ajax({
+				url:  "/web2018/app/api/restaurants/",
+				type: "POST",
+				data: formData,
+				contentType: "application/json",
+				success: function(result) {
+					$("#resName").val("");
+					$("#address").val("");
+					$("#type").prop('selectedIndex',0);
+					if(result.success) {
+						newRow = 
+							"<tr>"
+								+ "<td>" + result.data.name + "</td>"
+								+ "<td><button class=\"btn text-white details\" style=\"background-color: #00695c\" name=\"" + result.data.name + "\">Detaljnije</button></td>"
+								+ "<td><button class=\"btn text-white edit\" style=\"background-color: #00695c\" name=\"" + result.data.name + "\" data-toggle=\"modal\" data-target=\"#editRestaurantModal\">Izmeni</button></td>"
+								+ "<td><button class=\"btn btn-danger delete\" name=\"" + result.data.name + "\">Obriši</button></td>"
+							+ "</tr>"								
+						$("#tableBody").append(newRow)
+						$('#addRestaurantModal').modal('toggle');
+					} else {
+						$('#addRestaurantModal').modal('toggle');
+						alert(result.message);
+					}
+					
+				}
+				
+			});
+		
+		});
+		
+
+	});	
+	
+	$(document).on("click", ".cancelOrder", function(event) {
+		event.preventDefault();
+		var orderId = $(this).attr("name");		
+		$.ajax({
+			url: "/web2018/app/api/cancelOrders/"+orderId,
+			type: "PUT",
+			success: function(result) {
+				if(result.success) {
+					alert("Otkazano.");
+					location.reload();					
+				} else {
+					alert("Greska");
+				}
+				
+			}
+		});
+	});
+	
+	var oldRestaurantName;
+	$(document).on("click", ".edit", function(event) {
+		event.preventDefault();
+		var name = $(this).attr("name");
+		oldRestaurantName = name;
+		$.ajax({
+			url: "/web2018/app/api/restaurants/"+name,
+			type: "GET",
+			success: function(result) {
+				$("#editResName").val(result.data.name);
+				$("#editAddress").val(result.data.address);
+				$('#editType option[value="'+ result.data.restaurantType +'"]').attr("selected", true);
+				
+				
+			}
+		});
+	});
+	
+	$(document).on("submit", "#editResForm", function(event) {
+		event.preventDefault();
+		if($("#editResName").val()=="" || $("#editAddress").val()==""){
+			alert("Niste popunili sva polja.");
+			return;
+		}
+		formData = JSON.stringify({
+			name:$("#editResName").val(),
+			address:$("#editAddress").val(),
+			restaurantType:$("#editType").find("option:selected").val()
+		});
+		
+		$.ajax({
+			url:  "/web2018/app/api/restaurants/"+oldRestaurantName,
+			type: "PUT",
+			data: formData,
+			contentType: "application/json",
+			success: function(result) {
+				$("#editResName").val("");
+				$("#editAddress").val("");
+				$("#editType").prop('selectedIndex',0);
+				if(result.success) {
+					$('#editRestaurantModal').modal('toggle');
+					window.location.reload();
+				} else {
+					$('#editRestaurantModal').modal('toggle');
+					alert(result.message);
+				}
+				
+			}
+			
+		});
+	});
+	
+	$(document).on("click", ".delete", function(event){
+		event.preventDefault(); 
+		var confirmed = confirm("Da li ste sigurni da želite da obrišete ovaj restoran?");
+		if(confirmed){
+			var name = $(this).attr("name");
+			tr_parent = $(this).closest("tr");
+			$.ajax({
+	        	url: "/web2018/app/api/restaurants/"+name,
+	        	type: "DELETE",
+	        	success: function(){
+					tr_parent.remove();
+		        }
+			});
+		}
+	});
+	
+	$(document).on("click", ".details", function(event) {
+		event.preventDefault();
+		var name = $(this).attr("name");
+		localStorage.setItem("resName", JSON.stringify(name));
+		window.location.href = "http://localhost:8080/web2018/resDetails.html";
+	});
+	
+	
+	$(document).on("submit", "#vehForm", function(e) {
+		e.preventDefault();
+		if($("#make").val()=="" || $("#model").val()=="" || $("#registrationNum").val()=="" || $("#productionYear").val()==""){
+			alert("Niste popunili sva polja.");
+			return;
+		}
+		
+		var regex = /^[A-Z]{2}[0-9]{3}[A-Z]{2}$/;
+		var regNum = $("#registrationNum").val();
+		if(!($("#typeVeh option:selected").attr("name") === "bicycle")) {
+			if(!regex.test(regNum)) {
+				alert("Format za registracionu oznaku: 2 velika slova, 3 broja, 2 velika slova.");
+				return;
+			}
+		}
+		
+		formData = JSON.stringify({
+			make:$("#make").val(),
+			model:$("#model").val(),
+			registrationNum:$("#registrationNum").val(),
+			productionYear:$("#productionYear").val(),
+			extraInfo:$("#extraInfo").val(),
+			vehicleType:$("#typeVeh option:selected").attr("name")
+		});
+		
+		$.ajax({
+			url:  "/web2018/app/api/vehicles/",
+			type: "POST",
+			data: formData,
+			contentType: "application/json",
+			success: function(result) {
+				$("#make").val("");
+				$("#model").val("");
+				$("#registrationNum").val("");
+				$("#productionYear").val("");
+				$("#extraInfo").val("");
+				$("#typeVeh").prop('selectedIndex',0);
+				if(result.success) {
+					var vehT;
+					if(result.data.vehicleType === "car") {
+						vehT = "Auto";
+					} else if(result.data.vehicleType === "scooter") {
+						vehT = "Skuter";
+					} else {
+						vehT = "Bicikl";
+					}
+					newRow = 
+						"<tr>"
+							+ "<td>" + result.data.registrationNum + "</td>"
+							+ "<td>" + result.data.make + "</td>"
+							+ "<td>" + result.data.model + "</td>"
+							+ "<td>" + vehT + "</td>"
+							+ "<td>" + result.data.productionYear + "</td>"
+							+ "<td>" + result.data.extraInfo + "</td>"							
+							+ "<td><button class=\"btn text-white editVeh\" style=\"background-color: #00695c\" name=\"" + result.data.registrationNum + "\" data-toggle=\"modal\" data-target=\"#editVehicleModal\">Izmeni</button></td>"
+							+ "<td><button class=\"btn btn-danger deleteVeh\" name=\"" + result.data.registrationNum + "\">Obriši</button></td>"
+						+ "</tr>"								
+					$("#vehicleTableBody").append(newRow)
+					$('#addVehicleModal').modal('toggle');
+				} else {
+					$('#addVehicleModal').modal('toggle');
+					alert(result.message);
+				}
+				
+			}
+			
+		});
+		
+	});
+	
+	$(document).on("click", ".deleteVeh", function(event){
+		event.preventDefault(); 
+		var confirmed = confirm("Da li ste sigurni da želite da obrišete vozilo?");
+		if(confirmed){
+			var regNum = $(this).attr("name");
+			tr_parent = $(this).closest("tr");
+			$.ajax({
+	        	url: "/web2018/app/api/vehicles/"+regNum,
+	        	type: "DELETE",
+	        	success: function(){
+					tr_parent.remove();
+		        }
+			});
+		}
+	});
+	
+	var oldRegNum;
+	$(document).on("click", ".editVeh", function(event) {
+		event.preventDefault();
+		var regNum = $(this).attr("name");
+		oldRegNum = regNum;
+		$.ajax({
+			url: "/web2018/app/api/vehicles/"+regNum,
+			type: "GET",
+			success: function(result) {
+				$("#editMake").val(result.data.make);
+				$("#editModel").val(result.data.model);
+				$("#editRegistrationNum").val(result.data.registrationNum);
+				$("#editProductionYear").val(result.data.productionYear);
+				$("#editExtraInfo").val(result.data.extraInfo);
+				$('#editTypeVeh option[name="'+ result.data.vehicleType +'"]').attr("selected", true);
+				
+				
+			}
+		});
+	});
+	
+	$(document).on("submit", "#editVehForm", function(event) {
+		event.preventDefault();
+		if($("#editMake").val()=="" || $("#editModel").val()=="" || $("#editRegistrationNum").val()=="" || $("#editProductionYear").val()==""){
+			alert("Niste popunili sva polja.");
+			return;
+		}
+		
+		var regex = /^[A-Z]{2}[0-9]{3}[A-Z]{2}$/;
+		var regNum = $("#editRegistrationNum").val();
+		if(!($("#editTypeVeh option:selected").attr("name") === "bicycle")) {
+			if(!regex.test(regNum)) {
+				alert("Format za registracionu oznaku: 2 velika slova, 3 broja, 2 velika slova.");
+				return;
+			}
+		}
+		
+		formData = JSON.stringify({
+			make:$("#editMake").val(),
+			model:$("#editModel").val(),
+			registrationNum:$("#editRegistrationNum").val(),
+			productionYear:$("#editProductionYear").val(),
+			extraInfo:$("#editExtraInfo").val(),
+			vehicleType:$("#editTypeVeh option:selected").attr("name")
+		});
+		
+		$.ajax({
+			url:  "/web2018/app/api/vehicles/"+oldRegNum,
+			type: "PUT",
+			data: formData,
+			contentType: "application/json",
+			success: function(result) {
+				$("#editMake").val("");
+				$("#editModel").val("");
+				$("#editRegistrationNum").val("");
+				$("#editProductionYear").val("");
+				$("#editExtraInfo").val("");
+				$("#editTypeVeh").prop('selectedIndex',0);
+				if(result.success) {
+					$('#editVehicleModal').modal('toggle');
+					window.location.reload();
+				} else {
+					$('#editVehicleModal').modal('toggle');
+					alert(result.message);
+				}
+				
+			}
+			
+		});
+	});
+	
+	$(document).on("click", ".change", function(e) {
+		e.preventDefault();
+		var username = $(this).attr("name");
+		$.ajax({
+			url : "/web2018/app/api/users/"+username,
+			type: "PUT",
+			success: function(result) {
+				if(result.success) {
+					window.location.reload();
+				}
+				
+			}
+		});
+		
+	});
+	
+	$(document).on("click", ".delOrder", function(e) {
+		e.preventDefault();
+		var orderId = $(this).attr("name");
+		tr_parent = $(this).closest("tr");
+		var confirmed = confirm("Da li ste sigurni da želite da obrišete ovu porudzbinu?");
+		if(confirmed) {
+			$.ajax({
+				url : "/web2018/app/api/orders/"+orderId,
+				type: "DELETE",
+				success: function(result) {
+					if(result.success) {
+						tr_parent.remove();
+						alert("Obrisano.");
+					}
+					
+				}
+			});
+		}
+	});
+	
+	$(document).on("click", "#login", function(e) {
+		$.ajax({
+			url : "/web2018/app/api/sessions", 
+			type: "POST",
+			success: function(result) {
+				alert(result.message);
+				window.location.href = "http://localhost:8080/web2018/login.html";
+			}
+		});
+	});
+
+</script>
+
+<body>
+	<div class="nav nav-tabs" style="background-color: #00695c;">
+			<ul class="nav nav-tabs mr-auto">	
+				<li class="nav-item">
+					<a class="nav-link text-white" href="search.html">Pretraga</a>
+				</li>			
+				<li class="nav-item">
+					<a class="nav-link text-white" href="adminArea.html">Administracija</a>
+				</li>	
+			</ul>
+			<a class="nav-link mr-0 text-white" href="login.html" id="login">Odjava</a>
+		</div>
+	<br/>
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table" id="restaurantTable">
+				<thead class="thead-dark">
+					<tr>
+						<th>Ime Restorana</th>
+						<th colspan="3">Akcije</th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+				</tbody>
+				</table>
+				<button type="button" class="btn text-white" style="background-color: #00695c" data-toggle="modal" data-target="#addRestaurantModal">Kreiraj restoran</button>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table" id="vehicleTable">
+				<thead class="thead-dark">
+					<tr>
+						<th>Reg. Oznaka</th>
+						<th>Marka</th>
+						<th>Model</th>
+						<th>Tip</th>
+						<th>God. Proizvodnje</th>
+						<th>Napomena</th>
+						<th colspan="2">Akcije</th>
+					</tr>
+				</thead>
+				<tbody id="vehicleTableBody">
+				</tbody>
+				</table>
+				<button type="button" class="btn text-white" style="background-color: #00695c" data-toggle="modal" data-target="#addVehicleModal">Dodaj vozilo</button>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table" id="userTable">
+				<thead class="thead-dark">
+					<tr>
+						<th>Korisničko ime</th>
+						<th>Tip</th>
+						<th colspan="2">Akcije</th>
+					</tr>
+				</thead>
+				<tbody id="userTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	<br/>
+	
+	<div class="row">
+		<div class="col">
+				
+			</div>
+			<div class="col-7">
+				<table class="table  table-striped" id="orderTable">
+				<caption>Porudzbine</caption>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Datum</th>
+						<th>Kupac</th>
+						<th>Status</th>
+						<th>Dostavljač</th>
+						<th colspan="2"></th>
+					</tr>
+				</thead>
+				<tbody id="orderTableBody">
+				</tbody>
+				</table>
+			</div>
+			<div class="col">
+				
+		</div>
+	</div>
+	<br/>
+	
+	
+	<br/>
+	
+	<div class="modal fade" id="addVehicleModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="addVehicleModalLabel">Novo vozilo</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <form class="text-center" id="vehForm">
+			      <div class="modal-body form-group text-center">	
+			      		<p>
+							<label for="typeVeh">Tip</label> <select class="form-control text-center" id="typeVeh">
+								<option name="car">Auto</option>
+								<option name="bicycle">Bicikl</option>
+								<option name="scooter">Skuter</option>
+							</select>
+						</p>			
+						<p>
+							<label for="make">Marka</label> <input class="form-control text-center" type="text"
+								id="make" />
+						</p>	
+						<p>
+							<label for="model">Model</label> <input class="form-control text-center" type="text"
+								id="model" />
+						</p>	
+						<p>
+							<label for="registrationNum">Registraciona oznaka</label> <input class="form-control text-center" type="text"
+								id="registrationNum" required/>
+						</p>	
+						<p>
+							<label for="productionYear">Godina proizvodnje</label> <input class="form-control text-center" type="number"
+								id="productionYear" />
+						</p>	
+						<p>
+							<label for="extraInfo">Napomena</label> <input class="form-control text-center" type="text"
+								id="extraInfo" />
+						</p>	
+			      </div>
+			      <div class="modal-footer">
+			      	<input type="submit" class="btn text-white" style="background-color: #00695c" value="Dodaj"/>
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+			      </div>
+		      </form>
+		    </div>
+		  </div>
+	</div>
+	
+	<div class="modal fade" id="editVehicleModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="editVehicleModalLabel">Izmeni vozilo</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <form class="text-center" id="editVehForm">
+			      <div class="modal-body form-group text-center">	
+			      		<p>
+							<label for="editTypeVeh">Tip</label> <select class="form-control text-center" id="editTypeVeh">
+								<option name="car">Auto</option>
+								<option name="bicycle">Bicikl</option>
+								<option name="scooter">Skuter</option>
+							</select>
+						</p>			
+						<p>
+							<label for="editMake">Marka</label> <input class="form-control text-center" type="text"
+								id="editMake" />
+						</p>	
+						<p>
+							<label for="editModel">Model</label> <input class="form-control text-center" type="text"
+								id="editModel" />
+						</p>	
+						<p>
+							<label for="editRegistrationNum">Registraciona oznaka</label> <input class="form-control text-center" type="text"
+								id="editRegistrationNum" required/>
+						</p>	
+						<p>
+							<label for="editProductionYear">Godina proizvodnje</label> <input class="form-control text-center" type="number"
+								id="editProductionYear" />
+						</p>	
+						<p>
+							<label for="editExtraInfo">Napomena</label> <input class="form-control text-center" type="text"
+								id="editExtraInfo" />
+						</p>	
+			      </div>
+			      <div class="modal-footer">
+			      	<input type="submit" class="btn text-white" style="background-color: #00695c" value="Izmeni"/>
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+			      </div>
+		      </form>
+		    </div>
+		  </div>
+	</div>
+		
+	
+	<!-- Modalni za restoran -->
+	
+	<div class="modal fade" id="addRestaurantModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="addRestaurantModalLabel">Novi restoran</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <form class="text-center" id="resForm">
+			      <div class="modal-body form-group text-center">				
+						<p>
+							<label for="resName">Naziv</label> <input class="form-control text-center" type="text"
+								id="resName" required/>
+						</p>	
+						<p>
+							<label for="address">Adresa</label> <input class="form-control text-center" type="text"
+								id="address" />
+						</p>	
+						<p>
+							<label for="type">Kategorija</label> <select class="form-control text-center" id="type">
+								<option name="domestic">Domaca kuhinja</option>
+								<option name="barbecue">Rostilj</option>
+								<option name="chinese">Kineska kuhinja</option>
+								<option name="indian">Indijska kuhinja</option>
+								<option name="pastryShop">Poslasticarnica</option>
+								<option name="pizzeria">Picerija</option>
+							</select>
+						</p>
+			      </div>
+			      <div class="modal-footer">
+			      	<input type="submit" class="btn text-white" style="background-color: #00695c" value="Kreiraj"/>
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+			      </div>
+		      </form>
+		    </div>
+		  </div>
+	</div>	
+		
+	<div class="modal fade" id="editRestaurantModal" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="editRestaurantModalLabel">Izmeni restoran</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <form class="text-center" id="editResForm">
+			      <div class="modal-body form-group">				
+						<p>
+							<label for="editResName">Naziv</label> <input class="form-control text-center" type="text"
+								id="editResName" required/>
+						</p>	
+						<p>
+							<label for="editAddress">Adresa</label> <input class="form-control text-center" type="text"
+								id="editAddress" />
+						</p>	
+						<p>
+							<label for="editType">Kategorija</label> <select class="form-control text-center" id="editType">
+								<option value="domestic">Domaca kuhinja</option>
+								<option value="barbecue">Rostilj</option>
+								<option value="chinese">Kineska kuhinja</option>
+								<option value="indian">Indijska kuhinja</option>
+								<option value="pastryShop">Poslasticarnica</option>
+								<option value="pizzeria">Picerija</option>
+							</select>
+						</p>
+			      </div>
+			      <div class="modal-footer">
+			      	<input type="submit" class="btn text-white" style="background-color: #00695c" value="Izmeni"/>
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">Odustani</button>
+			      </div>
+		      </form>
+		    </div>
+		  </div>
+	</div>	
+</body>
+
+
+
+</html>
